@@ -1,0 +1,255 @@
+
+
+Tài liệu Mô tả và Thiết kế Hệ thống - Dự án Độc Giả Truyện (DocGiaTruyen)
+
+1. Giới thiệu dự án
+
+Dự án Độc Giả Truyện (DocGiaTruyen) là một nền tảng trực tuyến đa phương tiện dành cho cộng đồng yêu thích tiểu thuyết. Hệ thống không chỉ dừng lại ở việc cung cấp môi trường đọc và viết truyện truyền thống mà còn tích hợp các công nghệ tiên tiến như Trí tuệ nhân tạo (AI) và Chuyển đổi văn bản thành giọng nói (Text-to-Speech) để tối ưu hóa trải nghiệm người dùng.
+
+Mục tiêu: Xây dựng một hệ sinh thái toàn diện, nơi tác giả có thể sáng tạo và độc giả có thể tiếp cận tác phẩm qua nhiều hình thức (đọc, nghe) và được hỗ trợ bởi các công cụ AI thông minh.
+
+2. Công nghệ sử dụng (Tech Stack)
+
+Hệ thống được thiết kế theo kiến trúc Microservices để đảm bảo khả năng mở rộng và bảo trì linh hoạt.
+
+
+
+Thành phần
+
+
+Công nghệ đề xuất
+
+
+Lý do chọn lựa
+
+ 
+
+
+Frontend
+
+
+React.js, Redux Toolkit, Tailwind CSS
+
+
+React giúp xây dựng giao diện người dùng (UI) linh hoạt, tốc độ phản hồi nhanh và khả năng tái sử dụng component cao.
+
+
+Mobile App
+
+
+React Native hoặc Flutter
+
+
+Dễ dàng chuyển đổi logic từ Web sang App trong tương lai.
+
+
+Core Backend
+
+
+Java (Spring Boot)
+
+
+Đảm bảo tính ổn định, bảo mật cao và quản lý nghiệp vụ phức tạp hiệu quả.
+
+
+AI & Audio Service
+
+
+Python (FastAPI)
+
+
+Tận dụng hệ sinh thái thư viện mạnh mẽ cho AI/ML và xử lý ngôn ngữ tự nhiên.
+
+
+API Gateway/Middleware
+
+
+AWS AppSync (GraphQL)
+
+
+Tối ưu hóa việc truy vấn dữ liệu từ nhiều nguồn (SQL, NoSQL) và hỗ trợ cập nhật thời gian thực.
+
+
+Cơ sở dữ liệu
+
+
+MySQL & MongoDB
+
+
+MySQL cho dữ liệu quan hệ (User, Metadata); MongoDB cho nội dung chương truyện và log.
+
+
+Lưu trữ file
+
+
+Amazon S3 / Cloudinary
+
+
+Lưu trữ ảnh bìa, file Audio và các định dạng file truyện (EPUB, AWZ).
+
+3. Yêu cầu hệ thống
+
+3.1. Yêu cầu chức năng
+
+Hệ thống người dùng: Đăng ký, đăng nhập (JWT), quản lý hồ sơ, lịch sử đọc truyện, danh sách yêu thích.
+
+Dịch vụ Đọc (Read Service): Giao diện đọc truyện tùy chỉnh (font, màu nền), bookmark, phân trang.
+
+Dịch vụ Viết (Write Service): Trình soạn thảo văn bản cho tác giả, quản lý bản nháp, xuất bản chương mới.
+
+Dịch vụ Audio: Tự động chuyển đổi nội dung chương truyện thành giọng nói (TTS) để nghe truyện.
+
+Dịch vụ Import: Cho phép người dùng tải lên và đọc các file cá nhân định dạng .epub, .awz, .pdf.
+
+Chức năng AI: Tóm tắt nội dung chương, giải thích hệ thống cấp bậc/nhân vật trong truyện, gợi ý truyện thông minh.
+
+Tương tác cộng đồng: Đánh giá (Rating), Bình luận (Comments) và Thảo luận theo từng chương.
+
+3.2. Yêu cầu nghiệp vụ
+
+Hệ thống phải xử lý mượt mà khi có hàng ngàn người dùng truy cập cùng lúc.
+
+Dữ liệu bản nháp của tác giả phải được lưu tự động (Auto-save) để tránh mất mát.
+
+Các file Audio phải được cache để tiết kiệm chi phí tính toán và tăng tốc độ tải.
+
+Quyền sở hữu trí tuệ của tác giả phải được bảo vệ nghiêm ngặt thông qua phân quyền.
+
+4. Đặc tả Use Case
+
+Hệ thống bao gồm 3 tác nhân chính:
+
+Độc giả (Reader): Tìm kiếm, đọc truyện, nghe audio, bình luận, import file cá nhân.
+
+Tác giả (Author): Tạo truyện, quản lý chương, theo dõi thống kê lượt đọc, phản hồi bình luận.
+
+Quản trị viên (Admin): Quản lý người dùng, kiểm duyệt nội dung, quản lý báo cáo vi phạm, cấu hình hệ thống AI.
+
+5. Thiết kế Cơ sở dữ liệu
+
+Dự án sử dụng mô hình Polyglot Persistence (kết hợp nhiều loại DB) để tối ưu hiệu suất.
+
+5.1. Cơ sở dữ liệu quan hệ (MySQL)
+
+Lưu trữ các dữ liệu có cấu trúc chặt chẽ và cần tính nhất quán cao.
+
+Users: id, username, email, password_hash, role, created_at.
+
+Novels: id, title, author_id, description, cover_url, category_id, status (Ongoing/Finished).
+
+Categories: id, name, description.
+
+Ratings & Comments: id, user_id, novel_id, content, score, timestamp.
+
+5.2. Cơ sở dữ liệu NoSQL (MongoDB)
+
+Lưu trữ dữ liệu phi cấu trúc hoặc dữ liệu lớn.
+
+Chapters: novel_id, chapter_number, title, content (Long text), audio_url.
+
+Reading_History: user_id, novel_id, last_chapter_id, progress_percentage.
+
+AI_Metadata: novel_id, summary_data, world_building_analysis (JSON).
+
+6. Thiết kế API (Giao diện lập trình ứng dụng)
+
+Hệ thống sử dụng kết hợp REST cho các tác vụ quản trị và GraphQL cho các tác vụ lấy dữ liệu ở Frontend.
+
+
+
+Endpoint
+
+
+Phương thức
+
+
+Mô tả
+
+ 
+
+
+/api/v1/auth/login
+
+
+POST
+
+
+Xác thực người dùng và trả về JWT.
+
+
+/api/v1/novels
+
+
+GET
+
+
+Lấy danh sách truyện (có phân trang/lọc).
+
+
+/api/v1/chapters/{id}
+
+
+GET
+
+
+Lấy nội dung chi tiết một chương truyện.
+
+
+/api/v1/ai/summarize
+
+
+POST
+
+
+Gửi text để AI tóm tắt nội dung.
+
+
+/api/v1/audio/generate
+
+
+POST
+
+
+Yêu cầu tạo file audio cho một đoạn văn bản.
+
+7. Các Design Patterns và Nguyên lý thiết kế
+
+SOLID Principles: Đảm bảo code dễ mở rộng, ví dụ: Interface Segregation để tách biệt các service Đọc và Viết.
+
+Strategy Pattern: Sử dụng trong dịch vụ Import để xử lý các loại file khác nhau (EpubParser, AwzParser).
+
+Observer Pattern: Gửi thông báo đến độc giả khi tác giả họ theo dõi xuất bản chương mới.
+
+Factory Pattern: Khởi tạo các bộ máy AI (GPT, BERT) hoặc TTS Engine khác nhau dựa trên cấu hình.
+
+Singleton Pattern: Quản lý các kết nối đến Database và Cloud Storage.
+
+8. Cấu trúc thư mục dự án (Project Structure)
+
+DocGiaTruyen/├── frontend-web/ (React.js)│   ├── src/│   │   ├── components/ (UI Atoms, Molecules)│   │   ├── pages/ (Home, Reader, Studio)│   │   ├── store/ (Redux slices)│   │   └── services/ (API calls)├── backend-core/ (Spring Boot)│   ├── src/main/java/com/docgia/│   │   ├── controller/│   │   ├── service/│   │   ├── repository/│   │   └── model/ (Entities/DTOs)├── backend-ai-audio/ (FastAPI/Python)│   ├── models/ (LLM & TTS integration)│   ├── processors/ (Text cleaning, audio caching)│   └── main.py├── infrastructure/│   ├── docker-compose.yml│   └── nginx.conf└── docs/ (Tài liệu thiết kế, sơ đồ UML)
+
+9. Luồng xử lý chính (System Flow)
+
+Luồng Đọc truyện tích hợp AI:
+
+Người dùng chọn chương truyện -> Frontend gửi yêu cầu qua GraphQL.
+
+Backend Core lấy text từ MongoDB.
+
+Nếu người dùng bật chế độ AI, Backend gọi AI Service để lấy tóm tắt.
+
+Nếu người dùng bật chế độ Audio, Backend kiểm tra cache, nếu không có sẽ gọi Audio Service tạo giọng nói.
+
+Dữ liệu tổng hợp được trả về Frontend để hiển thị/phát nhạc.
+
+10. Các yếu tố phát triển toàn vẹn
+
+Security: Sử dụng HTTPS, mã hóa mật khẩu bằng BCrypt, ngăn chặn SQL Injection và XSS.
+
+Scalability: Triển khai trên Docker/Kubernetes để dễ dàng scale các service nặng như AI/Audio.
+
+UX/UI: Thiết kế giao diện tối giản, tập trung vào sự thoải mái của mắt khi đọc lâu.
+
+CI/CD: Thiết lập GitHub Actions để tự động build và test mỗi khi có commit mới.
+
+Tài liệu này là nền tảng để bắt đầu triển khai mã nguồn cho dự án DocGiaTruyen. Các chi tiết cụ thể hơn về logic nghiệp vụ sẽ được cập nhật trong các phiên bản tiếp theo.
