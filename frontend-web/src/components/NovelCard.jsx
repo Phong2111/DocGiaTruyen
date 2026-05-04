@@ -7,9 +7,13 @@ const NovelCard = ({ id, title, author, cover, rating, views, tags, isTrending }
     <Link to={`/novel/${id}`} className="group block h-full">
       <div className="relative overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800 aspect-[2/3] mb-3 shadow-sm group-hover:shadow-xl transition-all duration-300">
         <img 
-          src={cover} 
+          src={cover || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=300&auto=format&fit=crop'} 
           alt={title} 
-          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500 bg-slate-200 dark:bg-slate-700"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=300&auto=format&fit=crop';
+          }}
         />
         {/* Overlay gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300"></div>

@@ -1,18 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Filter, ChevronDown, Search } from 'lucide-react';
 import NovelCard from '../components/NovelCard';
-
-const DUMMY_NOVELS = [
-  { id: '1', title: 'Thế Giới Hoàn Mỹ', author: 'Thần Đông', cover: '/images/cover_1.png', rating: '4.8', views: '2.1M', tags: ['Tiên Hiệp'], isTrending: true },
-  { id: '2', title: 'Vạn Cổ Thần Đế', author: 'Phi Thiên Ngư', cover: '/images/cover_2.png', rating: '4.7', views: '1.5M', tags: ['Huyền Huyễn'], isTrending: true },
-  { id: '3', title: 'Ngạo Thế Đan Thần', author: 'Tịch Tiểu Tặc', cover: '/images/cover_3.png', rating: '4.5', views: '980K', tags: ['Tiên Hiệp'], isTrending: false },
-  { id: '4', title: 'Đấu Phá Thương Khung', author: 'Thiên Tàm Thổ Đậu', cover: '/images/cover_1.png', rating: '4.9', views: '5.2M', tags: ['Dị Giới'], isTrending: true },
-  { id: '5', title: 'Phàm Nhân Tu Tiên', author: 'Vong Ngữ', cover: '/images/cover_2.png', rating: '4.9', views: '3.4M', tags: ['Tiên Hiệp'], isTrending: false },
-  { id: '6', title: 'Kiếm Lai', author: 'Phong Hỏa Hí Chư Hầu', cover: '/images/cover_3.png', rating: '4.8', views: '1.2M', tags: ['Tiên Hiệp'], isTrending: false },
-  { id: '7', title: 'Đại Phụng Đả Canh Nhân', author: 'Mại Báo Tiểu Lang Quân', cover: '/images/cover_1.png', rating: '4.9', views: '4.1M', tags: ['Xuyên Không'], isTrending: true },
-  { id: '8', title: 'Toàn Trí Độc Giả', author: 'Sing N Song', cover: '/images/cover_2.png', rating: '4.9', views: '6.5M', tags: ['Đô Thị', 'Hệ Thống'], isTrending: true },
-];
+import api from '../services/api';
 
 const CATEGORIES = ['Tất cả', 'Tiên Hiệp', 'Huyền Huyễn', 'Đô Thị', 'Khoa Huyễn', 'Võng Du', 'Dị Giới', 'Đồng Nhân'];
 const STATUSES = ['Tất cả', 'Đang ra', 'Hoàn thành', 'Tạm dừng'];
@@ -23,6 +13,58 @@ const Explore = ({ initialTab = 'explore' }) => {
   const [activeStatus, setActiveStatus] = useState('Tất cả');
   const [activeSort, setActiveSort] = useState(initialTab === 'ranking' ? 'Lượt xem' : 'Mới cập nhật');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const [novels, setNovels] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Debounce search query
+  useEffect(() => {
+    const fetchNovels = async () => {
+      setLoading(true);
+      try {
+        let endpoint = '/novels';
+        if (searchQuery.trim() !== '') {
+          endpoint = `/novels/search?q=${encodeURIComponent(searchQuery)}`;
+        }
+        const response = await api.get(endpoint);
+        setNovels(response.data);
+      } catch (error) {
+        console.error('Error fetching novels:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      fetchNovels();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Handle local filtering for categories
+  const filteredNovels = novels.filter(novel => {
+    if (activeCategory !== 'Tất cả') {
+      if (!novel.genres || !novel.genres.includes(activeCategory)) {
+        return false;
+      }
+    }
+    // Status is not implemented in backend yet, so we ignore it for now or assume everything is "Đang ra"
+    return true;
+  });
+
+  // Handle local sorting
+  const sortedNovels = [...filteredNovels].sort((a, b) => {
+    if (activeSort === 'Lượt xem') {
+      return (b.viewCount || 0) - (a.viewCount || 0);
+    } else if (activeSort === 'Đánh giá') {
+      return (b.rating || 0) - (a.rating || 0);
+    } else if (activeSort === 'Số chương') {
+      return (b.chapterCount || 0) - (a.chapterCount || 0);
+    } else { // Mới cập nhật
+      return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
+    }
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-dark-bg pt-24 pb-20">
@@ -122,21 +164,39 @@ const Explore = ({ initialTab = 'explore' }) => {
           {/* Results Grid */}
           <div className="flex-grow">
             <div className="mb-4 text-slate-600 dark:text-slate-400 text-sm flex justify-between items-center">
-              <span>Hiển thị <span className="font-semibold text-slate-900 dark:text-white">120</span> kết quả</span>
+              <span>Hiển thị <span className="font-semibold text-slate-900 dark:text-white">{sortedNovels.length}</span> kết quả</span>
             </div>
             
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {DUMMY_NOVELS.map((novel, index) => (
-                <motion.div
-                  key={novel.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.05 }}
-                >
-                  <NovelCard {...novel} />
-                </motion.div>
-              ))}
-            </div>
+            {loading ? (
+              <div className="text-center py-12 text-slate-500">Đang tìm kiếm...</div>
+            ) : sortedNovels.length === 0 ? (
+              <div className="text-center py-12 text-slate-500">Không tìm thấy kết quả nào.</div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {sortedNovels.map((novel, index) => {
+                  const mappedNovel = {
+                    id: novel.id,
+                    title: novel.title,
+                    author: novel.author || novel.uploaderUsername,
+                    cover: novel.coverImageUrl || 'https://via.placeholder.com/200x300',
+                    rating: novel.rating || '0.0',
+                    views: novel.viewCount || 0,
+                    tags: novel.genres ? novel.genres.split(',').slice(0, 1) : [],
+                    isTrending: (novel.viewCount || 0) > 100
+                  };
+                  return (
+                    <motion.div
+                      key={novel.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: index * 0.05 }}
+                    >
+                      <NovelCard {...mappedNovel} />
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Pagination */}
             <div className="mt-12 flex justify-center">

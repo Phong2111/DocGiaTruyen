@@ -1,16 +1,67 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { BookOpen, Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { setCredentials } from '../store/authSlice';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const navigate = useNavigate();
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e) => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Dummy login action, redirect to home
-    navigate('/');
+    setLoading(true);
+    setError('');
+    setSuccessMsg('');
+
+    try {
+      const url = isLogin ? '/api/v1/auth/login' : '/api/v1/auth/register';
+      const body = isLogin
+        ? JSON.stringify({ username, password })
+        : JSON.stringify({ username, email, password });
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Tên đăng nhập hoặc mật khẩu không chính xác!');
+      }
+
+      if (isLogin) {
+        // Save to Redux
+        dispatch(setCredentials({
+          user: { id: data.id, username: data.username, email: data.email, role: data.role, avatarUrl: data.avatarUrl },
+          token: data.token
+        }));
+        // Optional: save token to localStorage here if you want persistence
+        localStorage.setItem('token', data.token);
+
+        navigate('/');
+      } else {
+        setSuccessMsg('Đăng ký thành công! Vui lòng đăng nhập.');
+        setIsLogin(true);
+        setPassword(''); // Clear password for security
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formVariants = {
@@ -60,9 +111,23 @@ const Auth = () => {
               <h2 className="text-3xl font-bold text-white mb-2 text-center">
                 {isLogin ? 'Chào mừng trở lại' : 'Tạo tài khoản'}
               </h2>
-              <p className="text-slate-300 text-center mb-8 text-sm">
+              <p className="text-slate-300 text-center mb-6 text-sm">
                 {isLogin ? 'Đăng nhập để tiếp tục trải nghiệm' : 'Tham gia cộng đồng đọc truyện lớn nhất'}
               </p>
+
+              {/* Alerts */}
+              {error && (
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/50 flex items-center text-red-400 text-sm">
+                  <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>{error}</span>
+                </motion.div>
+              )}
+              {successMsg && (
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/50 flex items-center text-emerald-400 text-sm">
+                  <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>{successMsg}</span>
+                </motion.div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 {!isLogin && (
@@ -75,6 +140,8 @@ const Auth = () => {
                       <input
                         type="text"
                         required
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
                         className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-white placeholder-slate-400 transition-all"
                         placeholder="Nguyễn Văn A"
                       />
@@ -82,20 +149,43 @@ const Auth = () => {
                   </div>
                 )}
 
-                <div className="space-y-1">
-                  <label className="text-slate-200 text-sm font-medium ml-1">Email</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className="h-5 w-5 text-slate-400" />
+                {isLogin && (
+                  <div className="space-y-1">
+                    <label className="text-slate-200 text-sm font-medium ml-1">Tên đăng nhập</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <User className="h-5 w-5 text-slate-400" />
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-white placeholder-slate-400 transition-all"
+                        placeholder="Tên đăng nhập"
+                      />
                     </div>
-                    <input
-                      type="email"
-                      required
-                      className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-white placeholder-slate-400 transition-all"
-                      placeholder="you@example.com"
-                    />
                   </div>
-                </div>
+                )}
+
+                {!isLogin && (
+                  <div className="space-y-1">
+                    <label className="text-slate-200 text-sm font-medium ml-1">Email</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-slate-400" />
+                      </div>
+                      <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-white placeholder-slate-400 transition-all"
+                        placeholder="you@example.com"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-1">
                   <label className="text-slate-200 text-sm font-medium ml-1">Mật khẩu</label>
@@ -104,11 +194,20 @@ const Auth = () => {
                       <Lock className="h-5 w-5 text-slate-400" />
                     </div>
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       required
-                      className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-white placeholder-slate-400 transition-all"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-white placeholder-slate-400 transition-all"
                       placeholder="••••••••"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-300 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
                   </div>
                 </div>
 
@@ -122,10 +221,13 @@ const Auth = () => {
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-bold rounded-xl shadow-lg shadow-primary-500/30 flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5"
+                  disabled={loading}
+                  className="w-full py-3.5 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-bold rounded-xl shadow-lg shadow-primary-500/30 flex items-center justify-center space-x-2 transition-all transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  <span>{isLogin ? 'Đăng nhập' : 'Đăng ký'}</span>
-                  <ArrowRight className="w-5 h-5" />
+                  <span>
+                    {loading ? 'Đang xử lý...' : (isLogin ? 'Đăng nhập' : 'Đăng ký')}
+                  </span>
+                  {!loading && <ArrowRight className="w-5 h-5" />}
                 </button>
               </form>
 
@@ -153,7 +255,12 @@ const Auth = () => {
               <div className="mt-8 text-center text-slate-300">
                 {isLogin ? "Chưa có tài khoản? " : "Đã có tài khoản? "}
                 <button
-                  onClick={() => setIsLogin(!isLogin)}
+                  type="button"
+                  onClick={() => {
+                    setIsLogin(!isLogin);
+                    setError('');
+                    setSuccessMsg('');
+                  }}
                   className="text-primary-400 hover:text-primary-300 font-semibold transition-colors"
                 >
                   {isLogin ? 'Đăng ký ngay' : 'Đăng nhập'}
