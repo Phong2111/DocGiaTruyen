@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  frontend-web:
+    build:
+      context: ../frontend-web
+      dockerfile: Dockerfile
+    container_name: docgia-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../frontend-web:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: docgia-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=docgiatruyen
+      - MYSQL_USER=docgia
+      - MYSQL_PASSWORD=docgia
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+  backend-core:
+    build:
+      context: ../backend-core
+      dockerfile: Dockerfile
+    container_name: docgia-backend-core
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/docgiatruyen?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+    depends_on:
+      - mysql
+    volumes:
+      - uploads_data:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  uploads_data:
