@@ -3,6 +3,7 @@ package com.docgia.controller;
 import com.docgia.dto.NovelRequest;
 import com.docgia.dto.NovelResponse;
 import com.docgia.service.NovelService;
+import com.docgia.service.EbookImportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -26,11 +27,24 @@ import org.springframework.http.HttpStatus;
 public class NovelController {
 
     private final NovelService novelService;
+    private final EbookImportService ebookImportService;
 
     @PostMapping
     public ResponseEntity<NovelResponse> createNovel(@RequestBody NovelRequest request, Authentication authentication) {
         String username = authentication.getName();
         return ResponseEntity.ok(novelService.createNovel(request, username));
+    }
+
+    @PostMapping("/import")
+    public ResponseEntity<?> importEpub(@RequestParam("file") MultipartFile file, Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            return ResponseEntity.ok(ebookImportService.importEpub(file, username));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Lỗi khi xử lý file"));
+        }
     }
 
     @GetMapping("/my")
@@ -42,6 +56,16 @@ public class NovelController {
     @GetMapping
     public ResponseEntity<List<NovelResponse>> getPublicNovels() {
         return ResponseEntity.ok(novelService.getPublicNovels());
+    }
+    
+    @GetMapping("/trending")
+    public ResponseEntity<List<NovelResponse>> getTrendingNovels() {
+        return ResponseEntity.ok(novelService.getTrendingNovels());
+    }
+    
+    @GetMapping("/latest")
+    public ResponseEntity<List<NovelResponse>> getLatestNovels() {
+        return ResponseEntity.ok(novelService.getLatestNovels());
     }
 
     @GetMapping("/search")
@@ -89,5 +113,18 @@ public class NovelController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "Error: Could not upload file"));
         }
+    }
+
+    @PostMapping("/{id}/view")
+    public ResponseEntity<?> incrementViewCount(@PathVariable Long id) {
+        novelService.incrementViewCount(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteNovel(@PathVariable Long id, Authentication authentication) {
+        String username = authentication.getName();
+        novelService.deleteNovel(id, username);
+        return ResponseEntity.ok().build();
     }
 }

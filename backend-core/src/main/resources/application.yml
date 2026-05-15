@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: docgiatruyen-backend-core
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
   datasource:
     url: jdbc:mysql://localhost:3306/docgiatruyen?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root

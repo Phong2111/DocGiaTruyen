@@ -1,19 +1,60 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles, TrendingUp, Clock } from 'lucide-react';
+import { ArrowRight, Sparkles, TrendingUp, Clock, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import NovelCard from '../components/NovelCard';
-
-// Sample Data
-const trendingNovels = [
-  { id: '1', title: 'Thế Giới Hoàn Mỹ', author: 'Thần Đông', cover: '/images/cover_1.png', rating: '4.8', views: '2.1M', tags: ['Tiên Hiệp', 'Huyền Huyễn'], isTrending: true },
-  { id: '2', title: 'Vạn Cổ Thần Đế', author: 'Phi Thiên Ngư', cover: '/images/cover_2.png', rating: '4.7', views: '1.5M', tags: ['Huyền Huyễn'], isTrending: true },
-  { id: '3', title: 'Ngạo Thế Đan Thần', author: 'Tịch Tiểu Tặc', cover: '/images/cover_3.png', rating: '4.5', views: '980K', tags: ['Tiên Hiệp', 'Trọng Sinh'], isTrending: false },
-  { id: '4', title: 'Đấu Phá Thương Khung', author: 'Thiên Tàm Thổ Đậu', cover: '/images/cover_1.png', rating: '4.9', views: '5.2M', tags: ['Dị Giới', 'Huyền Huyễn'], isTrending: true },
-  { id: '5', title: 'Phàm Nhân Tu Tiên', author: 'Vong Ngữ', cover: '/images/cover_2.png', rating: '4.9', views: '3.4M', tags: ['Tiên Hiệp', 'Cổ Điển'], isTrending: false },
-];
+import api from '../services/api';
 
 const Home = () => {
+  const [trendingNovels, setTrendingNovels] = useState([]);
+  const [latestNovels, setLatestNovels] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHomeData = async () => {
+      try {
+        const [trendingRes, latestRes] = await Promise.all([
+          api.get('/novels/trending'),
+          api.get('/novels/latest')
+        ]);
+        
+        setTrendingNovels(trendingRes.data || []);
+        setLatestNovels(latestRes.data || []);
+      } catch (error) {
+        console.error("Error fetching home data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHomeData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-primary-600 animate-spin" />
+      </div>
+    );
+  }
+
+  const mapToCardProps = (novel) => ({
+    id: novel.id,
+    title: novel.title,
+    author: novel.author,
+    cover: novel.coverImageUrl,
+    rating: novel.rating?.toFixed(1) || '0.0',
+    views: formatViews(novel.viewCount),
+    tags: novel.genres ? novel.genres.split(',').map(s => s.trim()) : [],
+    isTrending: true
+  });
+
+  const formatViews = (count) => {
+    if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M';
+    if (count >= 1000) return (count / 1000).toFixed(1) + 'K';
+    return count.toString();
+  };
+
   return (
     <div className="min-h-screen pb-10">
       {/* Hero Section */}
@@ -54,7 +95,7 @@ const Home = () => {
                 <span>Khám phá ngay</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link to="/categories" className="w-full sm:w-auto px-8 py-3.5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-semibold rounded-full border border-white/20 transition-all flex items-center justify-center">
+              <Link to="/explore" className="w-full sm:w-auto px-8 py-3.5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-semibold rounded-full border border-white/20 transition-all flex items-center justify-center">
                 Xem thể loại
               </Link>
             </div>
@@ -65,64 +106,68 @@ const Home = () => {
       <div className="container mx-auto px-4 md:px-8 mt-12 space-y-20">
         
         {/* Trending Section */}
-        <section>
-          <div className="flex justify-between items-end mb-8">
-            <div>
-              <div className="flex items-center space-x-2 text-rose-500 mb-2">
-                <TrendingUp className="w-5 h-5" />
-                <span className="font-bold uppercase tracking-wider text-sm">Thịnh hành</span>
+        {trendingNovels.length > 0 && (
+          <section>
+            <div className="flex justify-between items-end mb-8">
+              <div>
+                <div className="flex items-center space-x-2 text-rose-500 mb-2">
+                  <TrendingUp className="w-5 h-5" />
+                  <span className="font-bold uppercase tracking-wider text-sm">Thịnh hành</span>
+                </div>
+                <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Truyện Đang Hot</h2>
               </div>
-              <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Truyện Đang Hot</h2>
+              <Link to="/explore" className="hidden sm:flex items-center space-x-1 text-primary-600 dark:text-primary-400 hover:underline font-medium">
+                <span>Xem tất cả</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
-            <Link to="/ranking" className="hidden sm:flex items-center space-x-1 text-primary-600 dark:text-primary-400 hover:underline font-medium">
-              <span>Xem tất cả</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
-            {trendingNovels.map((novel, index) => (
-              <motion.div
-                key={novel.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <NovelCard {...novel} />
-              </motion.div>
-            ))}
-          </div>
-        </section>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+              {trendingNovels.map((novel, index) => (
+                <motion.div
+                  key={novel.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  <NovelCard {...mapToCardProps(novel)} />
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Latest Updates Section */}
-        <section>
-          <div className="flex justify-between items-end mb-8">
-            <div>
-              <div className="flex items-center space-x-2 text-teal-500 mb-2">
-                <Clock className="w-5 h-5" />
-                <span className="font-bold uppercase tracking-wider text-sm">Mới nhất</span>
+        {latestNovels.length > 0 && (
+          <section>
+            <div className="flex justify-between items-end mb-8">
+              <div>
+                <div className="flex items-center space-x-2 text-teal-500 mb-2">
+                  <Clock className="w-5 h-5" />
+                  <span className="font-bold uppercase tracking-wider text-sm">Mới nhất</span>
+                </div>
+                <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Vừa Cập Nhật</h2>
               </div>
-              <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Vừa Cập Nhật</h2>
+              <Link to="/explore" className="hidden sm:flex items-center space-x-1 text-primary-600 dark:text-primary-400 hover:underline font-medium">
+                <span>Xem tất cả</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
-            <Link to="/new" className="hidden sm:flex items-center space-x-1 text-primary-600 dark:text-primary-400 hover:underline font-medium">
-              <span>Xem tất cả</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
-            {trendingNovels.slice().reverse().map((novel, index) => (
-              <motion.div
-                key={novel.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <NovelCard {...novel} />
-              </motion.div>
-            ))}
-          </div>
-        </section>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+              {latestNovels.map((novel, index) => (
+                <motion.div
+                  key={novel.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  <NovelCard {...mapToCardProps(novel)} />
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
         
       </div>
     </div>

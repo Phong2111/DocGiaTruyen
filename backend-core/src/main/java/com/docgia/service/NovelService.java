@@ -65,6 +65,18 @@ public class NovelService {
                 .collect(Collectors.toList());
     }
 
+    public List<NovelResponse> getTrendingNovels() {
+        return novelRepository.findTop10ByIsPublicTrueOrderByViewCountDesc().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<NovelResponse> getLatestNovels() {
+        return novelRepository.findTop10ByIsPublicTrueOrderByCreatedAtDesc().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     public NovelResponse getNovelById(Long id) {
         Novel novel = novelRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Novel not found"));
@@ -90,6 +102,24 @@ public class NovelService {
 
         Novel updatedNovel = novelRepository.save(novel);
         return mapToResponse(updatedNovel);
+    }
+
+    public void incrementViewCount(Long id) {
+        Novel novel = novelRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Novel not found"));
+        novel.setViewCount(novel.getViewCount() + 1);
+        novelRepository.save(novel);
+    }
+
+    public void deleteNovel(Long id, String username) {
+        Novel novel = novelRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Novel not found"));
+
+        if (!novel.getUploader().getUsername().equals(username)) {
+            throw new RuntimeException("Not authorized to delete this novel");
+        }
+
+        novelRepository.delete(novel);
     }
 
     private NovelResponse mapToResponse(Novel novel) {
