@@ -9,8 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ChapterRequest {
-    private String title;
-    private String content;
-    private Integer chapterNumber; // optional, if null auto assign
+public class EngagementStatus {
+    private boolean isBookmarked;
+    private Integer userRating; // null if not rated
 }

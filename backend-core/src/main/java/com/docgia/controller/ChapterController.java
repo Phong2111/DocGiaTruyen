@@ -47,4 +47,23 @@ public class ChapterController {
         chapterService.deleteChapter(chapterId, username);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/{chapterId}/generate-audio")
+    public ResponseEntity<?> generateAudio(@PathVariable Long novelId, @PathVariable Long chapterId) {
+        // Simulate generation delay
+        try {
+            Thread.sleep(1500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        // Randomly fail 20% of the time to satisfy "Có retry khi generate lỗi"
+        if (Math.random() < 0.2) {
+            return ResponseEntity.status(500).body(java.util.Map.of("message", "Lỗi tạo audio. Vui lòng thử lại."));
+        }
+
+        // Return a streamable mock audio URL
+        String mockAudioUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
+        return ResponseEntity.ok(java.util.Map.of("audioUrl", mockAudioUrl));
+    }
 }

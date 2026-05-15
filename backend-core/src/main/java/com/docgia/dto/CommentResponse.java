@@ -5,12 +5,17 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ChapterRequest {
-    private String title;
+public class CommentResponse {
+    private Long id;
     private String content;
-    private Integer chapterNumber; // optional, if null auto assign
+    private String username;
+    private Long userId;
+    private String avatarUrl;
+    private LocalDateTime createdAt;
 }

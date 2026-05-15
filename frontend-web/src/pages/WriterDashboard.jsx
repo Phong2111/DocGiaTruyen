@@ -49,6 +49,24 @@ const WriterDashboard = () => {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa truyện này? Hành động này không thể hoàn tác và tất cả chương truyện sẽ bị xóa.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await api.delete(`/novels/${id}`);
+      setNovels(novels.filter(n => n.id !== id));
+      alert('Đã xóa truyện thành công');
+    } catch (error) {
+      console.error('Error deleting novel:', error);
+      alert('Lỗi khi xóa truyện. Vui lòng thử lại sau.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-dark-bg pt-24 pb-20">
       <div className="container mx-auto px-4 md:px-8">
@@ -62,21 +80,21 @@ const WriterDashboard = () => {
               <div className="w-full space-y-2">
                 <button 
                   onClick={() => setActiveTab('my_novels')}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${activeTab === 'my_novels' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-semibold' : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300'}`}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${activeTab === 'my_novels' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-800 dark:text-primary-400 font-semibold' : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300'}`}
                 >
                   <Book className="w-5 h-5" />
                   <span>Truyện của tôi</span>
                 </button>
                 <button 
                   onClick={() => setActiveTab('stats')}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${activeTab === 'stats' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-semibold' : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300'}`}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${activeTab === 'stats' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-800 dark:text-primary-400 font-semibold' : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300'}`}
                 >
                   <BarChart2 className="w-5 h-5" />
                   <span>Thống kê</span>
                 </button>
                 <button 
                   onClick={() => setActiveTab('settings')}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${activeTab === 'settings' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-semibold' : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300'}`}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${activeTab === 'settings' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-800 dark:text-primary-400 font-semibold' : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300'}`}
                 >
                   <Settings className="w-5 h-5" />
                   <span>Cài đặt</span>
@@ -101,10 +119,46 @@ const WriterDashboard = () => {
                     >
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                         <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Quản lý truyện</h3>
-                        <Link to="/writer/novel/new" className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors shadow-lg shadow-primary-500/30">
-                          <Plus className="w-5 h-5" />
-                          <span>Thêm truyện mới</span>
-                        </Link>
+                        <div className="flex gap-2">
+                          <input 
+                            type="file" 
+                            id="ebook-import" 
+                            className="hidden" 
+                            accept=".epub,.awz3" 
+                            onChange={async (e) => {
+                              const file = e.target.files[0];
+                              if (!file) return;
+                              
+                              const formData = new FormData();
+                              formData.append('file', file);
+                              
+                              try {
+                                setLoading(true);
+                                const response = await api.postMultipart('/novels/import', formData);
+                                alert('Import thành công: ' + response.data.title);
+                                // Refresh novels list
+                                const refreshResponse = await api.get('/novels/my');
+                                setNovels(refreshResponse.data);
+                              } catch (error) {
+                                console.error('Error importing ebook:', error);
+                                alert('Lỗi khi import eBook. Vui lòng kiểm tra lại định dạng file.');
+                              } finally {
+                                setLoading(false);
+                              }
+                            }}
+                          />
+                          <button 
+                            onClick={() => document.getElementById('ebook-import').click()}
+                            className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-5 py-2.5 rounded-xl font-medium transition-colors border border-slate-200 dark:border-slate-600"
+                          >
+                            <Book className="w-5 h-5" />
+                            <span>Import eBook</span>
+                          </button>
+                          <Link to="/writer/novel/new" className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors shadow-lg shadow-primary-500/30">
+                            <Plus className="w-5 h-5" />
+                            <span>Thêm truyện mới</span>
+                          </Link>
+                        </div>
                       </div>
                       
                       <div className="space-y-4">
@@ -176,7 +230,10 @@ const WriterDashboard = () => {
                                   <Edit3 className="w-4 h-4" />
                                   <span className="sm:hidden font-medium">Sửa truyện</span>
                                 </Link>
-                                <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 p-2 px-4 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-800/40 transition-colors">
+                                <button 
+                                  onClick={() => handleDelete(novel.id)}
+                                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 p-2 px-4 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-800/40 transition-colors"
+                                >
                                   <Trash2 className="w-4 h-4" />
                                   <span className="sm:hidden font-medium">Xóa</span>
                                 </button>
@@ -199,17 +256,17 @@ const WriterDashboard = () => {
                       <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Thống kê tác phẩm</h3>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <div className="bg-primary-50 dark:bg-primary-900/20 p-6 rounded-2xl border border-primary-100 dark:border-primary-800/30">
-                          <div className="text-primary-600 dark:text-primary-400 text-sm font-medium mb-2">Tổng số lượt xem</div>
+                          <div className="text-primary-800 dark:text-primary-400 text-sm font-medium mb-2">Tổng số lượt xem</div>
                           <div className="text-3xl font-bold text-slate-900 dark:text-white">
                             {novels.reduce((sum, n) => sum + (n.viewCount || 0), 0)}
                           </div>
                         </div>
                         <div className="bg-emerald-50 dark:bg-emerald-900/20 p-6 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
-                          <div className="text-emerald-600 dark:text-emerald-400 text-sm font-medium mb-2">Tổng số bình luận</div>
+                          <div className="text-emerald-800 dark:text-emerald-400 text-sm font-medium mb-2">Tổng số bình luận</div>
                           <div className="text-3xl font-bold text-slate-900 dark:text-white">0</div>
                         </div>
                         <div className="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-2xl border border-purple-100 dark:border-purple-800/30">
-                          <div className="text-purple-600 dark:text-purple-400 text-sm font-medium mb-2">Truyện đang viết</div>
+                          <div className="text-purple-800 dark:text-purple-400 text-sm font-medium mb-2">Truyện đang viết</div>
                           <div className="text-3xl font-bold text-slate-900 dark:text-white">{novels.length}</div>
                         </div>
                       </div>
